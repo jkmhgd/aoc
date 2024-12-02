@@ -5,7 +5,7 @@ use std::{
 };
 
 fn main() {
-    let file_path = "1_input.txt";
+    let file_path = "./input/1_input.txt";
     let file = File::open(file_path).unwrap();
     let reader = io::BufReader::new(file);
     let mut row1 = vec![];
