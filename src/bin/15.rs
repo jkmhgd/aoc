@@ -1,5 +1,6 @@
-use std::fs;
+use std::{collections::HashSet, fs};
 
+#[derive(PartialEq, Debug)]
 enum Direction {
     North,
     South,
@@ -129,8 +130,39 @@ fn part_2(input: &str) {
     for mov in moves {
         let direction = get_direction(mov);
         let (new_r, new_c) = get_new_rc(robot_r, robot_c, &direction);
-        let moved = dfs_2(new_r, new_c, &direction, &mut map);
+        let mut boxes_to_move = HashSet::new();
+        let moved;
+        if direction == Direction::North || direction == Direction::South {
+            let char = map[new_r][new_c];
+            if char == '[' {
+                moved = dfs_2(new_r, new_c, &direction, &mut map, &mut boxes_to_move) && dfs_2(new_r, new_c + 1, &direction, &mut map, &mut boxes_to_move);
+            } else if char == ']' {
+                moved = dfs_2(new_r, new_c - 1, &direction, &mut map, &mut boxes_to_move) && dfs_2(new_r, new_c, &direction, &mut map, &mut boxes_to_move);
+            } else {
+                moved = dfs_2(new_r, new_c, &direction, &mut map, &mut boxes_to_move);
+            }
+
+        } else {
+            moved = dfs_2(new_r, new_c, &direction, &mut map, &mut boxes_to_move);
+        }
         if moved {
+            let mut vec: Vec<(usize, usize)> = boxes_to_move.into_iter().collect();
+            if direction == Direction::North {
+                vec.sort_by(|a, b| a.0.cmp(&b.0));
+
+            } else if direction == Direction::South {
+                vec.sort_by(|a, b| b.0.cmp(&a.0));
+            } else if direction == Direction::West {
+                vec.sort_by(|a, b| a.1.cmp(&b.1));
+            } else if direction == Direction::East {
+                vec.sort_by(|a, b| b.1.cmp(&a.1));
+            }
+
+            for (r, c) in vec {
+                let (new_r, new_c) = get_new_rc(r, c, &direction);
+                map[new_r][new_c] = map[r][c];
+                map[r][c] = '.';
+            }
             map[robot_r][robot_c] = '.';
             robot_r = new_r;
             robot_c = new_c;
@@ -141,7 +173,7 @@ fn part_2(input: &str) {
     let mut total = 0;
     for (r, row) in map.iter().enumerate() {
         for (c, char) in row.iter().enumerate() {
-            if *char == 'O' {
+            if *char == '[' {
                 total += (100 * r) + c;
             }
         }
@@ -152,28 +184,59 @@ fn part_2(input: &str) {
 fn dfs_2(
     r: usize,
     c: usize,
-    // from_char: char,
     direction: &Direction,
     map: &mut Vec<Vec<char>>,
+    boxes_to_move: &mut HashSet<(usize, usize)>,
 ) -> bool {
     if r == usize::MAX || r >= map.len() || c == usize::MAX || c >= map[0].len() {
-        println!("ts");
         return false;
     }
     if map[r][c] == '#' {
         return false;
     }
     if map[r][c] == '.' {
-        map[r][c] = 'O';
         return true;
     }
-    if map[r][c] == '[' {
+    if *direction == Direction::North || *direction == Direction::South {
         let (new_r, new_c) = get_new_rc(r, c, direction);
-        return dfs(new_r, new_c, direction, map);
-    }
-    if map[r][c] == ']' {
-        let (new_r, new_c) = get_new_rc(r, c, direction);
-        return dfs(new_r, new_c, direction, map);
+        let next_char = map[new_r][new_c];
+        if next_char == '[' {
+            if map[r][c] == '[' {
+                boxes_to_move.insert((r, c));
+                return dfs_2(new_r, new_c, &direction, map, boxes_to_move) && dfs_2(new_r, new_c + 1, &direction, map, boxes_to_move);
+            }
+            if map[r][c] == ']' {
+                boxes_to_move.insert((r, c));
+                return dfs_2(new_r, new_c - 1, &direction, map, boxes_to_move) && dfs_2(new_r, new_c, &direction, map, boxes_to_move) && dfs_2(new_r, new_c + 1, &direction, map, boxes_to_move);
+            }
+        } else if next_char == ']' {
+            if map[r][c] == '[' {
+                boxes_to_move.insert((r, c));
+                return dfs_2(new_r, new_c - 1, &direction, map, boxes_to_move) && dfs_2(new_r, new_c, &direction, map, boxes_to_move) && dfs_2(new_r, new_c + 1, &direction, map, boxes_to_move);
+            }
+            if map[r][c] == ']' {
+                boxes_to_move.insert((r, c));
+                return dfs_2(new_r, new_c - 1, &direction, map, boxes_to_move) && dfs_2(new_r, new_c, &direction, map, boxes_to_move);
+            }
+        } else {
+            if map[r][c] == '[' {
+                boxes_to_move.insert((r, c));
+                let (new_r, new_c) = get_new_rc(r, c, direction);
+                return dfs_2(new_r, new_c, direction, map, boxes_to_move) && dfs_2(new_r, new_c + 1, direction, map, boxes_to_move);
+            }
+            if map[r][c] == ']' {
+                boxes_to_move.insert((r, c));
+                let (new_r, new_c) = get_new_rc(r, c, direction);
+                return dfs_2(new_r, new_c - 1, direction, map, boxes_to_move) && dfs_2(new_r, new_c, direction, map, boxes_to_move);
+            }
+        }
+
+    } else {
+        if map[r][c] == '[' || map[r][c] == ']' {
+            boxes_to_move.insert((r, c));
+            let (new_r, new_c) = get_new_rc(r, c, direction);
+            return dfs_2(new_r, new_c, direction, map, boxes_to_move);
+        }
     }
     panic!("not possible");
 }
