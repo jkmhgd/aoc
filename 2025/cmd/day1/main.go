@@ -15,8 +15,8 @@ func main() {
 	}
 	defer file.Close()
 
-	counter_p1 := 0
-	counter_p2 := 0
+	counterP1 := 0
+	counterP2 := 0
 	current := 50
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
@@ -36,15 +36,15 @@ func main() {
 				current = (current + 1) % 100
 			}
 			if current == 0 {
-				counter_p2++
+				counterP2++
 			}
 		}
 
 		if current == 0 {
-			counter_p1++
+			counterP1++
 		}
 	}
 
-	fmt.Printf("Part 1: %d\n", counter_p1)
-	fmt.Printf("Part 2: %d\n", counter_p2)
+	fmt.Println("Part 1:", counterP1)
+	fmt.Println("Part 2:", counterP2)
 }
